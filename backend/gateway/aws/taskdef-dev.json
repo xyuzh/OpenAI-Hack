@@ -1,0 +1,130 @@
+{
+  "containerDefinitions": [
+    {
+      "name": "usebase-agent-gateway-dev",
+      "image": "251928524746.dkr.ecr.us-west-1.amazonaws.com/usebase/usebase-agent-gateway:latest",
+      "portMappings": [
+        {
+          "name": "usebase-agent-gateway",
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "ENV",
+          "value": "dev"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "RABBITMQ_HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:RABBITMQ_HOST::"
+        },
+        {
+          "name": "RABBITMQ_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:RABBITMQ_USERNAME::"
+        },
+        {
+          "name": "RABBITMQ_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:RABBITMQ_PASSWORD::"
+        },
+        {
+          "name": "AWS_APP_SYNC_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:AWS_APP_SYNC_API_KEY::"
+        },
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:ANTHROPIC_API_KEY::"
+        },
+        {
+          "name": "USEBASE_INTERNAL_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:USEBASE_INTERNAL_API_KEY::"
+        },
+        {
+          "name": "REDIS_HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:REDIS_HOST::"
+        },
+        {
+          "name": "REDIS_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:REDIS_USERNAME::"
+        },
+        {
+          "name": "EXA_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:EXA_API_KEY::"
+        },
+        {
+          "name": "DAYTONA_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:DAYTONA_API_KEY::"
+        },
+        {
+          "name": "E2B_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:E2B_API_KEY::"
+        },
+        {
+          "name": "LANGSMITH_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:LANGSMITH_API_KEY::"
+        },
+        {
+          "name": "LANGFUSE_PUBLIC_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:LANGFUSE_PUBLIC_KEY::"
+        },
+        {
+          "name": "LANGFUSE_SECRET_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:LANGFUSE_SECRET_KEY::"
+        },
+        {
+          "name": "POSTGRESQL_DATASOURCE_HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:POSTGRESQL_DATASOURCE_HOST::"
+        },
+        {
+          "name": "POSTGRESQL_DATASOURCE_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:POSTGRESQL_DATASOURCE_USERNAME::"
+        },
+        {
+          "name": "POSTGRESQL_DATASOURCE_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:POSTGRESQL_DATASOURCE_PASSWORD::"
+        },
+        {
+          "name": "MONGODB_DATASOURCE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:MONGODB_DATASOURCE_URL::"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-west-1:251928524746:secret:usebase/dev-r67N6R:OPENAI_API_KEY::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-create-group": "true",
+          "awslogs-region": "us-west-1",
+          "awslogs-group": "/aws/ecs/usebase-agent-gateway/dev",
+          "awslogs-stream-prefix": "usebase-agent-gateway-dev",
+          "mode": "non-blocking",
+          "max-buffer-size": "25m"
+        },
+        "secretOptions": []
+      }
+    }
+  ],
+  "family": "usebase-agent-gateway-dev-task-definition",
+  "taskRoleArn": "arn:aws:iam::251928524746:role/usebase-ecs-task-role",
+  "executionRoleArn": "arn:aws:iam::251928524746:role/usebase-ecs-task-role",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "2048",
+  "memory": "4096",
+  "ephemeralStorage": {
+    "sizeInGiB": 40
+  },
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  }
+}

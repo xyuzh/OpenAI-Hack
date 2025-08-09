@@ -1,0 +1,6 @@
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: "arn:aws:ecs:us-west-1:251928524746:task-definition/usebase-agent-modem-dev-task-definition"

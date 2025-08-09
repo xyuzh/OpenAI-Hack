@@ -1,0 +1,19 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin 251928524746.dkr.ecr.us-west-1.amazonaws.com
+      - aws ecr batch-delete-image --repository-name usebase/usebase-agent-modem --image-ids imageTag=latest || true
+  build:
+    commands:
+      - docker build -f modem/Dockerfile -t usebase/usebase-agent-modem .
+  post_build:
+    commands:
+      - docker tag usebase/usebase-agent-modem:latest 251928524746.dkr.ecr.us-west-1.amazonaws.com/usebase/usebase-agent-modem:latest
+      - docker push 251928524746.dkr.ecr.us-west-1.amazonaws.com/usebase/usebase-agent-modem:latest
+artifacts:
+  files:
+    - modem/aws/appspec-dev.yaml
+    - modem/aws/taskdef-dev.json
+    - modem/aws/imagedefinitions.json
+    - modem/aws/buildspec.yml

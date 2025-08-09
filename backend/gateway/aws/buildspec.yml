@@ -1,0 +1,18 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin 251928524746.dkr.ecr.us-west-1.amazonaws.com
+      - aws ecr batch-delete-image --repository-name usebase/usebase-agent-gateway --image-ids imageTag=latest || true
+  build:
+    commands:
+      - docker build -f gateway/Dockerfile -t usebase/usebase-agent-gateway .
+  post_build:
+    commands:
+      - docker tag usebase/usebase-agent-gateway:latest 251928524746.dkr.ecr.us-west-1.amazonaws.com/usebase/usebase-agent-gateway:latest
+      - docker push 251928524746.dkr.ecr.us-west-1.amazonaws.com/usebase/usebase-agent-gateway:latest
+artifacts:
+  files:
+    - gateway/aws/appspec-dev.yaml
+    - gateway/aws/taskdef-dev.json
+    - gateway/aws/buildspec.yml

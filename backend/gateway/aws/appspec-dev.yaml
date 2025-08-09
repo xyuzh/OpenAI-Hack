@@ -1,0 +1,9 @@
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: "arn:aws:ecs:us-west-1:251928524746:task-definition/usebase-agent-gateway-dev-task-definition"
+        LoadBalancerInfo:
+          ContainerName: "usebase-agent-gateway-dev"
+          ContainerPort: 8080

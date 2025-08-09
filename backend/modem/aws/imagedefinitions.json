@@ -1,0 +1,6 @@
+[
+  {
+    "name": "usebase-agent-modem-dev",
+    "imageUri": "251928524746.dkr.ecr.us-west-1.amazonaws.com/usebase/usebase-agent-modem:latest"
+  }
+]
