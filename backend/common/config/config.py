@@ -208,27 +208,20 @@ class Config:
         create_missing_queues = cls._get_env_bool(
             'CELERY_TASK_CREATE_MISSING_QUEUES')
 
-        # 构建队列相关字段
-        queue_arguments = {
-            'x-dead-letter-exchange': dl_exchange,
-            'x-dead-letter-routing-key': dl_routing_key,
-            'x-message-ttl': message_ttl,
-            'x-queue-type': 'classic',
-            'x-single-active-consumer': True
-        }
-
+        # 构建队列相关字段 - Note: task_queues will be set up in the Celery app itself
+        # We only provide the configuration parameters here
         celery_config.update({
             'task_default_queue': queue_name,
             'task_default_exchange': exchange_name,
             'task_default_routing_key': routing_key,
             'task_create_missing_queues': create_missing_queues,
-            'task_queues': {
-                queue_name: {
-                    'exchange': exchange_name,
-                    'routing_key': routing_key,
-                    'queue_arguments': queue_arguments,
-                    'durable': True
-                }
+            # Store queue arguments for later use, but don't create Queue objects here
+            'queue_arguments': {
+                'x-dead-letter-exchange': dl_exchange,
+                'x-dead-letter-routing-key': dl_routing_key,
+                'x-message-ttl': message_ttl,
+                'x-queue-type': 'classic',
+                'x-single-active-consumer': True
             }
         })
 

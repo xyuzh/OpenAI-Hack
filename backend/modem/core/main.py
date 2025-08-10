@@ -3,6 +3,7 @@ import re
 
 from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown
+from kombu import Queue, Exchange
 from dotenv import load_dotenv
 
 from common.config import Config
@@ -17,7 +18,34 @@ load_dotenv()
 
 app = Celery('main')
 
-app.conf.update(Config.get_celery_config())
+# Get configuration
+celery_config = Config.get_celery_config()
+
+# Extract queue_arguments before removing from config
+queue_arguments = celery_config.get('queue_arguments', {})
+
+# Remove queue_arguments from config as it's not a valid Celery config key
+if 'queue_arguments' in celery_config:
+    celery_config.pop('queue_arguments')
+
+# Update Celery configuration
+app.conf.update(celery_config)
+
+# Set up queue with Kombu objects after configuration
+queue_name = celery_config.get('task_default_queue', 'celery')
+exchange_name = celery_config.get('task_default_exchange', 'celery')
+routing_key = celery_config.get('task_default_routing_key', 'celery')
+
+# Create the Queue object and set it directly with queue arguments
+app.conf.task_queues = [
+    Queue(
+        queue_name,
+        Exchange(exchange_name, type='direct', durable=True),
+        routing_key=routing_key,
+        durable=True,
+        queue_arguments=queue_arguments  # Pass the queue arguments
+    )
+]
 
 logger = get_logger("modem.core.main")
 

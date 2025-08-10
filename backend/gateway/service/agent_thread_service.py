@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from celery import Celery
+from kombu import Queue, Exchange
 
 from common.config import Config
 from common.db.redis_pool import get_async_redis_client
@@ -26,6 +27,7 @@ class AgentThreadService:
         """Initialize thread service"""
         self.redis = None
         self.celery_app = None
+        self.celery_queue_name = 'celery_default_queue'  # Default queue name
         self.initialized = False
         
         # Redis key prefixes
@@ -46,11 +48,35 @@ class AgentThreadService:
                 
                 # Initialize Celery app
                 celery_config = Config.get_celery_config()
+                
+                # Extract queue_arguments before removing from config
+                queue_arguments = celery_config.get('queue_arguments', {})
+                
+                # Remove queue_arguments from config as it's not a valid Celery config key
+                if 'queue_arguments' in celery_config:
+                    celery_config.pop('queue_arguments')
+                
                 self.celery_app = Celery('gateway')
                 self.celery_app.conf.update(celery_config)
                 
+                # Store the queue name for later use
+                self.celery_queue_name = celery_config.get('task_default_queue', 'celery_default_queue')
+                exchange_name = celery_config.get('task_default_exchange', 'celery')
+                routing_key = celery_config.get('task_default_routing_key', 'celery')
+                
+                # Set up queue with proper arguments (matching modem configuration)
+                self.celery_app.conf.task_queues = [
+                    Queue(
+                        self.celery_queue_name,
+                        Exchange(exchange_name, type='direct', durable=True),
+                        routing_key=routing_key,
+                        durable=True,
+                        queue_arguments=queue_arguments  # Pass the queue arguments
+                    )
+                ]
+                
                 self.initialized = True
-                logger.info("AgentThreadService async resources initialized")
+                logger.info(f"AgentThreadService async resources initialized with queue: {self.celery_queue_name}")
             except Exception as e:
                 logger.error(f"AgentThreadService initialization failed: {e}")
                 raise
@@ -227,11 +253,11 @@ class AgentThreadService:
                 run_id=run_id  # Explicit run_id for new thread mode
             )
             
-            # Send task to Celery queue
+            # Send task to Celery queue (use configured queue name)
             self.celery_app.send_task(
                 'main.process_flow_data',
                 args=[task_data.model_dump_json()],
-                queue='celery'
+                queue=self.celery_queue_name  # Use the dynamically configured queue name
             )
             
             # Update run status to processing

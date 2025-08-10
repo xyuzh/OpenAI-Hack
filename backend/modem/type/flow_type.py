@@ -42,11 +42,16 @@ class ProcessFlowDataRequest(BaseModel):
     Celery流程数据处理请求
 
     用于从Java服务接收处理流程数据的任务请求参数
+    Supports both legacy flow mode and new thread mode
     """
     flow_uuid: str
     flow_input_uuid: str
     user_uuid: str
     context_data: List[dict]
+    
+    # Thread mode fields (optional for backward compatibility)
+    thread_id: Optional[str] = None
+    run_id: Optional[str] = None
 
     @classmethod
     def from_json(cls, json_str: str) -> 'ProcessFlowDataRequest':

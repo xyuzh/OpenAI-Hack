@@ -112,6 +112,9 @@ async def execute_agent_task(
                 logger.info(f"Document fetched: {doc_data.get('title', 'Untitled')}")
             except Exception as e:
                 logger.error(f"Failed to fetch document: {e}")
+                # Check if it's a tool not found error
+                if "not found" in str(e).lower():
+                    logger.warning("Google Docs integration may not be connected in Composio. Please ensure Google Docs is connected.")
                 # Continue without document content
         
         # Validate thread exists and is active

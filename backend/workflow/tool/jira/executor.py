@@ -132,7 +132,7 @@ class JiraToolExecutor(BaseTool):
             # Call OpenAI to generate tool call
             logger.info("Calling OpenAI to generate Jira action")
             response = await self.openai_client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-5",
                 tools=tools,
                 messages=[
                     {"role": "system", "content": system_prompt},
