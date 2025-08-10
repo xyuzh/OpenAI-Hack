@@ -21,7 +21,7 @@
       pendingOwner?: boolean;
     };
   
-    export type DriveFile = {
+    type DriveFile = {
       id: string;
       name: string;
       mimeType: string; // e.g. "application/vnd.google-apps.document"
@@ -37,15 +37,17 @@
       webViewLink?: string;
     };
   
-    export type DriveList = {
+    type DriveList = {
       documents: DriveFile[];
       next_page_token?: string | null;
       total_found?: number;
     };
   
     // --- Props ---------------------------------------------------------------
+    import FilePreview from './FilePreview.svelte';
+
     export let documents: DriveFile[] = [];
-    /** Called when a row is double-clicked (or Enter/Space is pressed while focused). */
+    /** Called when a row is opened (double-click or Enter/Space). */
     export let onOpen: (doc: DriveFile) => void = () => {};
     /** Optional: initial sort field */
     export let initialSort: { field: 'name' | 'createdTime' | 'modifiedTime'; dir: 'asc' | 'desc' } = {
@@ -57,6 +59,7 @@
     let sortField: 'name' | 'createdTime' | 'modifiedTime' = initialSort.field;
     let sortDir: 'asc' | 'desc' = initialSort.dir;
     let query = '';
+    let previewDoc: DriveFile | null = null;
   
     $: filtered = query.trim()
       ? documents.filter((d) =>
@@ -86,12 +89,14 @@
     }
   
     function onRowDblClick(doc: DriveFile) {
+      previewDoc = doc;
       onOpen?.(doc);
     }
   
     function onRowKeydown(e: KeyboardEvent, doc: DriveFile) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        previewDoc = doc;
         onOpen?.(doc);
       }
     }
@@ -207,7 +212,7 @@
             <li
               class="grid grid-cols-12 items-center hover:bg-indigo-50/40 focus:bg-indigo-50/70 focus:outline-none cursor-default"
               title={titleFor(doc)}
-              tabindex="0"
+              
               on:dblclick={() => onRowDblClick(doc)}
               on:keydown={(e) => onRowKeydown(e, doc)}
               aria-label={`Open ${doc.name}`}
@@ -287,6 +292,10 @@
     </div>
   </div>
   
+  {#if previewDoc}
+    <FilePreview doc={previewDoc} onClose={() => (previewDoc = null)} />
+  {/if}
+
   <style>
     /* Optional: improve focus ring on list rows */
     li[tabindex="0"]:focus {
