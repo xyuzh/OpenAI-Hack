@@ -627,6 +627,31 @@ class AgentEventStreamService:
         finally:
             logger.info(f"Redis消息监听器结束: {flow_uuid}.{flow_input_uuid}")
 
+    async def stream_thread_events(
+            self,
+            request,
+            thread_id: str,
+            last_id: Optional[str] = None
+    ) -> AsyncGenerator[str, None]:
+        """
+        生成线程的SSE事件流
+        
+        Args:
+            request: FastAPI请求对象
+            thread_id: 线程ID
+            last_id: 上次读取的消息ID (可选)
+        
+        Raises:
+            StreamConnectionException: 连接相关异常（超时、断开、Redis异常等）
+        """
+        # 对于线程模式，我们使用thread_id作为flow_uuid，使用"stream"作为flow_input_uuid
+        # 这样可以保持向后兼容性
+        flow_uuid = thread_id
+        flow_input_uuid = "stream"
+        
+        async for event in self.stream_sse_events(request, flow_uuid, flow_input_uuid, last_id):
+            yield event
+    
     async def stream_sse_events(
             self,
             request,

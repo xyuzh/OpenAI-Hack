@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from common.db.redis_pool import initialize_async_redis_pool, close_async_redis_pool
 from common.utils.logger_utils import get_logger
 from gateway.controller.agent_event_stream_controller import router as agent_event_stream_router
+from gateway.controller.agent_thread_controller import router as agent_thread_router
 from gateway.controller.health_controller import router as health_router
 
 # Suppress Pydantic serialization warnings from LiteLLM library globally
@@ -28,6 +29,9 @@ app.add_middleware(
 app.include_router(health_router, tags=["Health"])
 app.include_router(agent_event_stream_router,
                    prefix="/agent/event-stream", tags=["AgentEventStream"])
+# 注册新的线程API路由
+app.include_router(agent_thread_router,
+                   prefix="/api/agent", tags=["AgentThread"])
 
 
 # 应用启动事件
