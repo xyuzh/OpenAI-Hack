@@ -1,3 +1,11 @@
+1. Set up python env
+```
+poetry init 
+poetry env use {/opt/homebrew/bin/python3}
+poetry env activate
+poetry install
+```
+
 ```
 brew install mongodb-community@7.0
 brew services start mongodb-community@7.0
