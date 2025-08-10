@@ -1,0 +1,40 @@
+# OS/Editor
+.DS_Store
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+
+# Node
+node_modules/
+dist/
+build/
+.npm
+.pnpm-store
+
+# Logs
+logs/
+*.log
+log/
+
+# Redis
+backend/dump.rdb
+
+# Python tooling
+.mypy_cache/
+.pytest_cache/
+.coverage*
+htmlcov/
+
+# Misc
+.idea/
+.vscode/
+coverage/
+**/.DS_Store
