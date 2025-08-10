@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 from typing import Optional, Any, List, Literal, TYPE_CHECKING
+import importlib.util
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -184,22 +185,42 @@ class AgentExecuteData(BaseModel):
         return validate_uuid_format(v)
 
 
-# Try to rebuild models with actual types when this module is imported
-# This handles the case where the workflow modules are already available
-try:
-    from workflow.tool.use_template.tool import UseTemplateParam
-    from workflow.tool.file_write.tool import FileWriteParam
-    from workflow.tool.file_edit.tool import FileEditParam
-    from workflow.tool.multi_edit.tool import MultiEditParam
-    from workflow.tool.todo_write.tool import TodoWriteParam
-    
-    # If imports succeed, rebuild the models immediately
-    AgentExecuteResult.model_rebuild()
-    AgentExecuteData.model_rebuild()
-except ImportError:
-    # If imports fail (circular import), we'll rebuild later
-    # The rebuild_models() function can be called manually if needed
-    pass
+def _conditionally_import_tool_types() -> dict[str, Any]:
+    """Best-effort import of tool param types if modules exist.
+
+    Returns a mapping of symbol name to object for any successfully imported types.
+    Missing modules are ignored so that environments without tools still work.
+    """
+    name_to_module_path = {
+        'UseTemplateParam': 'workflow.tool.use_template.tool',
+        'FileWriteParam': 'workflow.tool.file_write.tool',
+        'FileEditParam': 'workflow.tool.file_edit.tool',
+        'MultiEditParam': 'workflow.tool.multi_edit.tool',
+        'TodoWriteParam': 'workflow.tool.todo_write.tool',
+    }
+
+    imported: dict[str, Any] = {}
+    for symbol_name, module_path in name_to_module_path.items():
+        try:
+            if importlib.util.find_spec(module_path) is None:
+                continue
+            module = __import__(module_path, fromlist=[symbol_name])
+            imported[symbol_name] = getattr(module, symbol_name)
+        except Exception:
+            # Ignore any import failure; tools are optional at runtime
+            continue
+    return imported
+
+
+# Best-effort rebuild when module is imported (optional, non-fatal)
+_imported_symbols = _conditionally_import_tool_types()
+if _imported_symbols:
+    globals().update(_imported_symbols)
+    try:
+        AgentExecuteResult.model_rebuild()
+        AgentExecuteData.model_rebuild()
+    except Exception:
+        pass
 
 
 # Function to rebuild models with actual types
@@ -208,20 +229,14 @@ def rebuild_models():
     This function should be called after all the workflow tool modules are imported
     to resolve the forward references in the models.
     """
-    # Import the actual types into the current namespace
-    from workflow.tool.use_template.tool import UseTemplateParam
-    from workflow.tool.file_write.tool import FileWriteParam
-    from workflow.tool.file_edit.tool import FileEditParam
-    from workflow.tool.multi_edit.tool import MultiEditParam
-    from workflow.tool.todo_write.tool import TodoWriteParam
-    
-    # Make types available in the module's global namespace
-    globals()['UseTemplateParam'] = UseTemplateParam
-    globals()['FileWriteParam'] = FileWriteParam
-    globals()['FileEditParam'] = FileEditParam
-    globals()['MultiEditParam'] = MultiEditParam
-    globals()['TodoWriteParam'] = TodoWriteParam
-    
-    # Rebuild the models - they will now find the types in the global namespace
-    AgentExecuteResult.model_rebuild()
-    AgentExecuteData.model_rebuild()
+    # Import whichever tool types are available and update globals
+    imported = _conditionally_import_tool_types()
+    if imported:
+        globals().update(imported)
+    # Rebuild the models (safe even if some types are still forward refs)
+    try:
+        AgentExecuteResult.model_rebuild()
+        AgentExecuteData.model_rebuild()
+    except Exception:
+        # Keep non-fatal to allow running without tool packages
+        pass
