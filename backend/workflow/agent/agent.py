@@ -8,23 +8,6 @@ from workflow.core.config import AgentConfig
 from workflow.llm.llm import LLM, Model
 from workflow.prompt.prompt import PromptManager
 from workflow.tool.tool import AgentTools
-from workflow.tool import (
-    WebSearchTool,
-    UrlExposeTool,
-    BashTool,
-    FilesCreationTool,
-    FileEditTool,
-    FileReadTool,
-    MultiEditTool,
-    GlobTool,
-    LsTool,
-    GrepTool,
-    JobPlanTool,
-    UseTemplateTool,
-    SuggestNextStepsTool,
-    TodoReadTool,
-    TodoWriteTool,
-)
 from workflow.core.message import Message, TextContent
 from workflow.schema.job_state import JobState, JobRunState
 from workflow.agent.tool.plan_task import JobPlan
@@ -74,27 +57,11 @@ class Agent:
 
     @property
     def get_running_tools(self) -> list[ChatCompletionToolParam]:
-        return [
-            BashTool,
-            SuggestNextStepsTool,
-            FilesCreationTool,
-            FileReadTool,
-            FileEditTool,
-            UrlExposeTool,
-            UseTemplateTool,
-            MultiEditTool,
-            GlobTool,
-            LsTool,
-            GrepTool,
-            TodoReadTool,
-            TodoWriteTool,
-        ]
+        return []
 
     @property
     def get_planning_tools(self) -> list[ChatCompletionToolParam]:
-        return [
-            JobPlanTool,
-        ]
+        return []
 
     async def step(self, job_state: JobState) -> ModelResponse:
         try:
