@@ -216,13 +216,14 @@ class AgentThreadService:
                     ex=86400 * 7
                 )
             
-            # Prepare Celery task data
-            # For backward compatibility, we map thread_id to flow_uuid and run_id to flow_input_uuid
+            # Prepare Celery task data with thread support
             task_data = ProcessFlowDataRequest(
-                flow_uuid=thread_id,  # Map thread_id to flow_uuid
-                flow_input_uuid=run_id,  # Map run_id to flow_input_uuid
+                flow_uuid=thread_id,  # Map thread_id to flow_uuid for backward compatibility
+                flow_input_uuid=run_id,  # Map run_id to flow_input_uuid for backward compatibility
                 user_uuid=user_uuid or "anonymous",
-                context_data=context_data or [{"task": task, "parameters": parameters}]
+                context_data=context_data or [{"task": task, "parameters": parameters}],
+                thread_id=thread_id,  # Explicit thread_id for new thread mode
+                run_id=run_id  # Explicit run_id for new thread mode
             )
             
             # Send task to Celery queue

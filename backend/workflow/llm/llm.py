@@ -42,10 +42,13 @@ __all__ = ['LLM']
 
 
 class Model(Enum):
-    o4_mini = "o4-mini-2025-04-16"
-    sonnet_3_7 = "anthropic/claude-sonnet-4-20250514"
-    gpt_4_1 = "gpt-4.1-2025-04-14"
-    o3 = 'o3-2025-04-16'
+    """OpenAI models only"""
+    GPT_4O = "gpt-4o"
+    GPT_4O_MINI = "gpt-4o-mini"
+    GPT_4_TURBO = "gpt-4-turbo"
+    GPT_4 = "gpt-4"
+    GPT_35_TURBO = "gpt-3.5-turbo"
+    # GPT_5 = "gpt-5"  # Uncomment when GPT-5 is available
 
 
 # tuple of exceptions to retry on
@@ -54,55 +57,31 @@ LLM_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = (
     LLMNoResponseError,
 )
 
-# cache prompt supporting models
-# remove this when we gemini and deepseek are supported
-CACHE_PROMPT_SUPPORTED_MODELS = [
-    'claude-3-7-sonnet-20250219',
-    'claude-3-5-sonnet-20241022',
-    'claude-3-5-sonnet-20240620',
-    'claude-3-5-haiku-20241022',
-    'claude-3-haiku-20240307',
-    'claude-3-opus-20240229',
-]
+# OpenAI models don't use cache prompts in the same way
+CACHE_PROMPT_SUPPORTED_MODELS = []
 
-# function calling supporting models
+# OpenAI models that support function calling
 FUNCTION_CALLING_SUPPORTED_MODELS = [
-    'claude-3-7-sonnet-20250219',
-    'claude-3-5-sonnet',
-    'claude-3-5-sonnet-20240620',
-    'claude-3-5-sonnet-20241022',
-    'claude-3.5-haiku',
-    'claude-3-5-haiku-20241022',
-    'gpt-4o-mini',
     'gpt-4o',
-    'o1-2024-12-17',
-    'o3-mini-2025-01-31',
-    'o3-mini',
-    'o3',
-    'o3-2025-04-16',
-    'o4-mini',
-    'o4-mini-2025-04-16',
-    'gemini-2.5-pro',
-    'gpt-4.1',
+    'gpt-4o-mini',
+    'gpt-4-turbo',
+    'gpt-4',
+    'gpt-3.5-turbo',
+    'gpt-5',  # Future model
 ]
 
+# OpenAI o1 models support reasoning effort
 REASONING_EFFORT_SUPPORTED_MODELS = [
-    'claude-3-7-sonnet-20250219',
-    'o1-2024-12-17',
     'o1',
-    'o3',
-    'o3-2025-04-16',
-    'o3-mini-2025-01-31',
-    'o3-mini',
-    'o4-mini',
-    'o4-mini-2025-04-16',
-]
-
-MODELS_WITHOUT_STOP_WORDS = [
     'o1-mini',
     'o1-preview',
+]
+
+# OpenAI o1 models don't support stop words
+MODELS_WITHOUT_STOP_WORDS = [
     'o1',
-    'o1-2024-12-17',
+    'o1-mini',
+    'o1-preview',
 ]
 
 
@@ -135,7 +114,7 @@ class LLM(RetryMixin, DebugMixin):
         self.metrics: Metrics = (
             metrics
             if metrics is not None
-            else Metrics(model_name=Model.sonnet_3_7.value)
+            else Metrics(model_name=Model.GPT_4O.value)
         )
         self.cost_metric_supported: bool = True
         self.config: LLMConfig = copy.deepcopy(config)

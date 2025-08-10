@@ -1,7 +1,6 @@
 from typing import Callable, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass
 
-from workflow.service.daytona_sandbox import DaytonaSandbox
 from workflow.schema.job_state import JobState
 
 # Avoid circular imports
@@ -26,13 +25,7 @@ class ToolContext:
     def job_state(self) -> Optional[JobState]:
         return self.runner.job_state
     
-    @property
-    def daytona(self) -> Optional[DaytonaSandbox]:
-        return self.runner.daytona
-    
-    @daytona.setter
-    def daytona(self, value: DaytonaSandbox):
-        self.runner.daytona = value
+    # Daytona removed - no longer needed
     
     @property
     def on_client_message(self) -> Optional[Callable]:

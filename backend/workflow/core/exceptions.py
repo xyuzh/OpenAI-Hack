@@ -93,7 +93,7 @@ class LLMResponseError(Exception):
 class LLMNoResponseError(Exception):
     def __init__(
         self,
-        message: str = 'LLM did not return a response. This is only seen in Gemini models so far.',
+        message: str = 'LLM did not return a response.',
     ) -> None:
         super().__init__(message)
 

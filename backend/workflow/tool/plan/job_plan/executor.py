@@ -1,7 +1,7 @@
 import os
 
 from workflow.tool.plan.job_plan.tool import JobPlanParam, JobPlanTool
-from workflow.service.daytona_sandbox import DaytonaSandbox
+# Daytona import removed - no longer needed
 from workflow.core.logger import usebase_logger as logger
 from workflow.prompt.prompt import PromptManager
 from workflow.agent.tool.plan_task import JobPlan
@@ -35,7 +35,6 @@ def _job_run_init(job_state: JobState):
 async def _execute(
     job_state: JobState,
     param: JobPlanParam,
-    daytona: DaytonaSandbox,
 ) -> None:
     try:
         job_state.job_plan = JobPlan(
@@ -46,10 +45,8 @@ async def _execute(
         # Reinitialize the message window based on the job plan
         _job_run_init(job_state)
         
-        # create job dir
-        await daytona.run_bash(
-            bash_ops=BashOps(cmd=f'mkdir -p {job_state.job_dir}'), cwd='/'
-        )
+        # Job dir creation removed - Daytona no longer needed
+        pass
     except Exception as e:
         logger.error(f"Error executing job plan: {e}")
         raise e
@@ -65,20 +62,13 @@ class JobPlanToolExecutor(BaseTool):
         # Send init message
         await self.send_init_message(context)
         try:
-            # Initialize Daytona
-            context.daytona = await DaytonaSandbox.init(
-                user=context.user,
-                daytona_image=context.config.daytona_image,
-                user_repo=context.user_repo,
-            )
-
+            # Daytona initialization removed - no longer needed
             # Update job state
             context.job_state.state = JobRunState.RUNNING
 
             await _execute(
                 context.job_state,
                 params,
-                context.daytona,
             )
         except Exception as e:
             logger.error(f"Error initializing job plan: {e}")

@@ -18,10 +18,10 @@ python-dotenv = "1.1.0"
 toml = ">=0.10.2,<0.11.0"
 colorlog = ">=6.9.0"
 arrow = ">=1.3.0"
-litellm = "^1.75.4"
+litellm = "^1.75.4"  # Used for OpenAI API interface
 pymongo = ">=4.13.1"
 motor = ">=3.7.1"
-daytona = ">=0.21.0"
+# daytona = ">=0.21.0"  # Removed - no longer needed
 fastapi = ">=0.115.12,<0.116.0"
 websocket-client = ">=1.8.0,<2.0.0"
 celery = "5.5.2"
@@ -38,7 +38,7 @@ python-json-logger = ">=3.3.0,<4.0.0"
 uvicorn = ">=0.34.2,<0.35.0"
 redis = ">=6.0.0"
 exa-py = ">=1.13.1"
-daytona-sdk = ">=0.18.1"
+# daytona-sdk = ">=0.18.1"  # Removed - no longer needed
 psycopg = {extras = ["binary", "pool"], version = ">=3.2.9"}
 # Modem dependencies
 kombu = "5.5.3"
@@ -47,7 +47,7 @@ flower = "2.0.1"
 watchdog = ">=6.0.0"
 # Gateway dependencies
 httpx = {extras = ["socks"], version = ">=0.28.1"}
-e2b = "1.2.0b6"
+# e2b = "1.2.0b6"  # Removed - no longer needed
 
 [tool.poetry.group.dev.dependencies]
 watchdog = ">=6.0.0"

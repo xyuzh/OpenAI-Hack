@@ -37,9 +37,8 @@ def load_from_env(
 ) -> None:
     """Sets config attributes from environment variables or TOML dictionary.
 
-    Reads environment-style variables and updates the config attributes accordingly.
-    Supports configuration of LLM settings (e.g., LLM_BASE_URL), agent settings
-    (e.g., AGENT_MEMORY_ENABLED), sandbox settings (e.g., SANDBOX_TIMEOUT), and more.
+    Simplified to primarily handle OPENAI_API_KEY and COMPOSIO_API_KEY.
+    Still supports other configuration for backward compatibility.
 
     Args:
         cfg: The AppConfig object to set attributes on.
@@ -101,6 +100,18 @@ def load_from_env(
 
     # Start processing from the root of the config object
     set_attr_from_env(cfg)
+    
+    # Handle essential API keys explicitly
+    if 'OPENAI_API_KEY' in env_or_toml_dict:
+        from pydantic import SecretStr
+        cfg.openai_api_key = SecretStr(env_or_toml_dict['OPENAI_API_KEY'])
+        # Also set it for the default LLM config
+        default_llm_config = cfg.get_llm_config()
+        default_llm_config.api_key = SecretStr(env_or_toml_dict['OPENAI_API_KEY'])
+    
+    if 'COMPOSIO_API_KEY' in env_or_toml_dict:
+        from pydantic import SecretStr
+        cfg.composio_api_key = SecretStr(env_or_toml_dict['COMPOSIO_API_KEY'])
 
     # load default LLM config from env
     default_llm_config = cfg.get_llm_config()

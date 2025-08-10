@@ -1,3 +1,4 @@
+import os
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field, SecretStr
@@ -52,8 +53,15 @@ class AppConfig(BaseModel):
         mcp: MCP configuration settings.
     """
 
+    # Essential API Keys
+    openai_api_key: SecretStr | None = Field(
+        default_factory=lambda: SecretStr(os.getenv('OPENAI_API_KEY')) if os.getenv('OPENAI_API_KEY') else None
+    )
+    composio_api_key: SecretStr | None = Field(
+        default_factory=lambda: SecretStr(os.getenv('COMPOSIO_API_KEY')) if os.getenv('COMPOSIO_API_KEY') else None
+    )
+    
     llms: dict[str, LLMConfig] = Field(default_factory=dict)
-    daytona_image: str | None = Field(default=None)
     agents: dict[str, AgentConfig] = Field(default_factory=dict)
     default_agent: str = Field(default=OH_DEFAULT_AGENT)
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
@@ -73,16 +81,12 @@ class AppConfig(BaseModel):
     run_as_usebase: bool = Field(default=True)
     max_iterations: int = Field(default=OH_MAX_ITERATIONS)
     max_budget_per_task: float | None = Field(default=None)
-    modal_api_token_id: SecretStr | None = Field(default=None)
-    modal_api_token_secret: SecretStr | None = Field(default=None)
     disable_color: bool = Field(default=False)
     jwt_secret: SecretStr | None = Field(default=None)
     debug: bool = Field(default=False)
     file_uploads_max_file_size_mb: int = Field(default=0)
     file_uploads_restrict_file_types: bool = Field(default=False)
     file_uploads_allowed_extensions: list[str] = Field(default_factory=lambda: ['.*'])
-    daytona_api_url: str = Field(default='https://app.daytona.io/api')
-    daytona_target: str = Field(default='eu')
     cli_multiline_input: bool = Field(default=False)
     conversation_max_age_seconds: int = Field(default=864000)  # 10 days in seconds
     enable_default_condenser: bool = Field(default=True)
@@ -104,7 +108,11 @@ class AppConfig(BaseModel):
                 f'llm config group {name} not found, using default config'
             )
         if 'llm' not in self.llms:
-            self.llms['llm'] = LLMConfig()
+            # Create default LLM config with OpenAI API key
+            self.llms['llm'] = LLMConfig(
+                api_key=self.openai_api_key,
+                model='gpt-4o'
+            )
         return self.llms['llm']
 
     def get_appsync_config(self) -> dict:

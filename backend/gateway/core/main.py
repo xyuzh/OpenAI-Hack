@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from common.db.redis_pool import initialize_async_redis_pool, close_async_redis_pool
 from common.utils.logger_utils import get_logger
-from gateway.controller.agent_event_stream_controller import router as agent_event_stream_router
 from gateway.controller.agent_thread_controller import router as agent_thread_router
 from gateway.controller.health_controller import router as health_router
 
@@ -27,9 +26,7 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(health_router, tags=["Health"])
-app.include_router(agent_event_stream_router,
-                   prefix="/agent/event-stream", tags=["AgentEventStream"])
-# 注册新的线程API路由
+# 注册线程API路由
 app.include_router(agent_thread_router,
                    prefix="/api/agent", tags=["AgentThread"])
 
@@ -52,9 +49,9 @@ async def shutdown_event():
 
     # 获取全局服务实例并关闭
     try:
-        from gateway.controller.agent_event_stream_controller import _event_stream_service
-        if _event_stream_service:
-            await _event_stream_service.close()
+        from gateway.controller.agent_thread_controller import _stream_service
+        if _stream_service:
+            await _stream_service.close()
             logger.info("已关闭事件流服务实例")
     except Exception as e:
         logger.error(f"关闭事件流服务时出错: {e}")

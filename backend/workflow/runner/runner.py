@@ -4,7 +4,7 @@ import pydantic
 import time
 from redis.asyncio import Redis
 import queue
-from typing import Any, Coroutine
+from typing import Any, Coroutine, Optional
 from threading import Event
 from functools import partial
 
@@ -24,7 +24,6 @@ from workflow.core.logger import usebase_logger as logger
 from workflow.core.config import AppConfig
 from workflow.core.message import Message, TextContent
 from workflow.service.exa import ExaService
-from workflow.service.daytona_sandbox import DaytonaSandbox
 from workflow.agent.agent import Agent
 from workflow.llm.llm import LLM
 from workflow.schema import User
@@ -55,7 +54,7 @@ class Runner:
             config=agent_config,
         )
         self.config = config
-        self.daytona: DaytonaSandbox | None = None
+        # Sandbox no longer needed - removed Daytona/E2B
         self.exa = ExaService()
         # self.appsync_service: AppSyncReceiveMessageService | None = None
         self.shutdown_event = Event()
@@ -91,18 +90,26 @@ class Runner:
         self.client_message_service = ClientMessageService(self.redis_client)
 
         # init on_client_message
+        # Determine if we're in thread mode or legacy flow mode
+        if hasattr(user_request, 'thread_id') and user_request.thread_id:
+            # Thread mode - use thread_id
+            thread_id = user_request.thread_id
+            run_id = user_request.run_id or user_request.flow_input_uuid
+        else:
+            # Legacy mode - use flow_uuid as thread_id
+            thread_id = user_request.flow_uuid
+            run_id = user_request.flow_input_uuid
+        
         if is_local:
-
             async def test_on_client_message(data: AgentExecuteData) -> str:
                 return "test"
 
             self.on_client_message = test_on_client_message
         else:
             self.on_client_message = partial(
-                self.client_message_service.stream_and_save_response,
-                flow_uuid=user_request.flow_uuid,
-                flow_input_uuid=user_request.flow_input_uuid,
-                event=EventStreamSseEvent.TASK_AGENT_EXECUTE,
+                self.client_message_service.stream_and_save_response_thread,
+                thread_id=thread_id,
+                run_id=run_id,
             )
 
         # init user and sandbox
@@ -119,36 +126,13 @@ class Runner:
                 or job_state.state == JobRunState.RUNNING
             ) and self.on_client_message:
                 job_state.state = JobRunState.RUNNING
-                self.daytona = await DaytonaSandbox.init(
-                    user=self.user,
-                    daytona_image=config.daytona_image,
-                    user_repo=self.user_repo,
-                )
+                # Daytona sandbox initialization removed - no longer needed
+                pass
             job_state.messages.append(user_message)
         except Exception as e:
             job_state = JobState(id=user_request.flow_uuid)
             self.agent.init_pre_run_messages(job_state, user_message)
         self.job_state = job_state
-
-        # TODO: enable interrupt init appsync service
-        def on_message_callback(message: ReceivedMessage):
-            """消息接收回调示例"""
-            logger.info(f"AppSync service received message: {message}")
-            if message.message_type == 'data':
-                event = json.loads(message.data['event'])
-                if event['content'] == 'stop':
-                    self.shutdown_event.set()
-                    logger.info(f"AppSync service received stop message")
-
-        # self.appsync_service = AppSyncReceiveMessageService(
-        #     http_domain=appsync_config["http_domain"],
-        #     websocket_domain=appsync_config["websocket_domain"],
-        #     api_key=appsync_config["api_key"],
-        #     user_uuid=self.user.id,
-        #     message_callback=on_message_callback,
-        # )
-        # if not self.appsync_service.start():
-        #     raise Exception("Failed to start AppSync service")
 
         return self
 
@@ -235,7 +219,7 @@ class Runner:
             if self.job_state.state != JobRunState.RUNNING:
                 break
 
-    async def handle_flow_completion(self, task: asyncio.Task):
+    async def handle_flow_completion(self, task: asyncio.Task, thread_id: Optional[str] = None):
         if self.on_client_message is None:
             return
         if task.done():
@@ -256,6 +240,9 @@ class Runner:
                             ),
                         )
                     )
+                    # Send control signal for error
+                    if thread_id and self.client_message_service:
+                        await self.client_message_service.publish_control_signal(thread_id, "ERROR")
                 else:
                     await self.on_client_message(
                         data=AgentExecuteData(
@@ -265,6 +252,9 @@ class Runner:
                             execute_type=AgentExecuteType.FLOW_COMPLETION,
                         )
                     )
+                    # Send control signal for completion
+                    if thread_id and self.client_message_service:
+                        await self.client_message_service.publish_control_signal(thread_id, "END_STREAM")
             except BaseException as e:
                 logger.error(f"Flow interrupted: {e}")
                 await self.on_client_message(
@@ -275,13 +265,16 @@ class Runner:
                         execute_type=AgentExecuteType.FLOW_COMPLETION,
                     )
                 )
+                # Send control signal for interruption
+                if thread_id and self.client_message_service:
+                    await self.client_message_service.publish_control_signal(thread_id, "STOP")
         
 
         # Save job state
         await self.job_state_repo.save(self.job_state)
         # Delete sandbox
-        if self.daytona:
-            await self.daytona.daytona.close()
+        # Daytona cleanup removed - no longer needed
+        pass
         # if self.appsync_service:
         #     self.appsync_service.close()
         if self.redis_client:
@@ -296,6 +289,9 @@ class Runner:
             task: asyncio.Task | None = None
             try:
                 runner = await Runner.init(request)
+                # Get thread_id for control signals
+                thread_id = request.thread_id if hasattr(request, 'thread_id') and request.thread_id else request.flow_uuid
+                
                 task = asyncio.create_task(runner.run_job())
                 while not runner.shutdown_event.is_set():
                     if task.done():
@@ -312,7 +308,7 @@ class Runner:
                         await task
                     except BaseException as e:
                         pass
-                    await runner.handle_flow_completion(task)
+                    await runner.handle_flow_completion(task, thread_id)
 
         asyncio.run(async_run_flow())
 
