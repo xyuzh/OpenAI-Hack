@@ -7,6 +7,7 @@ from common.config import Config
 from common.db.redis_pool import get_async_redis_client
 from common.utils.logger_utils import get_logger
 from common.utils.string_utils import generate_uuid
+from common.type.domain import DomainType
 from common.type.thread import (
     ThreadStatus,
     ThreadRunStatus,
@@ -87,8 +88,8 @@ class AgentThreadService:
             str: Thread ID
         """
         try:
-            # Generate thread ID
-            thread_id = generate_uuid()
+            # Generate thread ID (use FLOW for backward compatibility)
+            thread_id = generate_uuid(DomainType.FLOW)
             
             # Create thread metadata
             thread_metadata = ThreadMetadata(
@@ -175,8 +176,8 @@ class AgentThreadService:
             str: Run ID
         """
         try:
-            # Generate run ID
-            run_id = generate_uuid()
+            # Generate run ID (use FLOW_INPUT for backward compatibility)
+            run_id = generate_uuid(DomainType.FLOW_INPUT)
             
             # Create run record
             thread_run = ThreadRun(
