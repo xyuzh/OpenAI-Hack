@@ -39,6 +39,8 @@ class ThreadExecuteRequest(BaseModel):
     context_data: Optional[List[dict]] = Field(default_factory=list)
     parameters: Optional[Dict[str, Any]] = Field(default_factory=dict)
     user_uuid: Optional[str] = None
+    document_id: Optional[str] = Field(default=None, description="Google Doc ID to process")
+    entity_id: Optional[str] = Field(default="default-user", description="User entity ID for Composio")
 
 
 class ThreadExecuteResponse(BaseModel):

@@ -97,15 +97,45 @@ async def execute_agent_task(
     try:
         logger.info(f"Executing task in thread {thread_id}: {request.task}")
         
+        # If document_id is provided, fetch document content
+        document_content = None
+        if request.document_id:
+            logger.info(f"Fetching document {request.document_id} for processing")
+            from gateway.service.composio_service import get_composio_service
+            try:
+                composio_service = get_composio_service()
+                doc_data = await composio_service.get_document_by_id(
+                    entity_id=request.entity_id,
+                    document_id=request.document_id
+                )
+                document_content = doc_data
+                logger.info(f"Document fetched: {doc_data.get('title', 'Untitled')}")
+            except Exception as e:
+                logger.error(f"Failed to fetch document: {e}")
+                # Continue without document content
+        
         # Validate thread exists and is active
         if not await service.validate_thread(thread_id):
             raise HTTPException(status_code=404, detail=f"Thread {thread_id} not found or inactive")
+        
+        # Add document content to context if available
+        context_data = request.context_data or []
+        if document_content:
+            context_data.append({
+                "type": "document",
+                "document_id": request.document_id,
+                "title": document_content.get("title", "Untitled"),
+                "content": document_content.get("content", ""),
+                "metadata": {
+                    "entity_id": request.entity_id
+                }
+            })
         
         # Execute task
         run_id = await service.execute_task(
             thread_id=thread_id,
             task=request.task,
-            context_data=request.context_data,
+            context_data=context_data,
             parameters=request.parameters,
             user_uuid=request.user_uuid
         )

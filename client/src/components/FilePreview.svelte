@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { getGenerateEndpoint } from '../lib/api';
+  import { initiateThread, executeThreadTask } from '../lib/thread';
+  import { createEventDispatcher } from 'svelte';
 
   type DriveUser = {
     displayName: string;
@@ -40,6 +41,9 @@
 
   export let doc: DriveFile | null = null;
   export let onClose: () => void = () => {};
+  export let entityId: string = 'default-user';
+  
+  const dispatch = createEventDispatcher();
 
   $: embedUrl = doc ? `https://docs.google.com/document/d/${doc.id}/preview` : '';
 
@@ -57,18 +61,51 @@
     if (!doc) return;
     isGenerating = true;
     generateError = null;
+    
     try {
-      const endpoint = getGenerateEndpoint(doc.id);
-      const response = await fetch(endpoint, { method: 'POST' });
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        throw new Error(text || `Request failed with status ${response.status}`);
-      }
-      // Intentionally not doing anything with the response body here; adjust as needed.
+      // Step 1: Initialize a new thread
+      console.log('Initializing thread...');
+      const threadInit = await initiateThread({
+        document_id: doc.id,
+        document_name: doc.name
+      });
+      
+      const threadId = threadInit.thread_id;
+      console.log('Thread created:', threadId);
+      
+      // Step 2: Execute task to process document and create Jira tickets
+      console.log('Executing task to process document...');
+      const task = `Process this Google Doc and create Jira tickets for each action item or task found. 
+                    Document: ${doc.name}
+                    Please analyze the document content and create appropriate Jira issues with:
+                    - Clear titles
+                    - Detailed descriptions
+                    - Appropriate issue types (Task, Story, Bug)
+                    - Priority levels`;
+      
+      const executeResponse = await executeThreadTask(
+        threadId,
+        task,
+        doc.id,
+        entityId
+      );
+      
+      console.log('Task execution started:', executeResponse);
+      
+      // Step 3: Dispatch event to switch to chat UI
+      dispatch('startChat', {
+        threadId: threadId,
+        runId: executeResponse.run_id,
+        documentId: doc.id,
+        documentName: doc.name
+      });
+      
+      // Close the preview
+      onClose();
+      
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       generateError = message;
-      // eslint-disable-next-line no-console
       console.error('Generate failed:', err);
     } finally {
       isGenerating = false;

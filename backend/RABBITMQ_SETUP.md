@@ -140,11 +140,14 @@ cd /Users/xinyu/code/hackthon/openai_hack/backend
 
 ### Start Celery Worker (Modem)
 ```bash
-# Basic start
-poetry run celery -A modem.core.celery_app worker --loglevel=info
+# Use the provided run script (recommended)
+./modem/run.sh
+
+# Or start manually
+poetry run celery -A modem.core.main:app worker --loglevel=info
 
 # With more options
-poetry run celery -A modem.core.celery_app worker \
+poetry run celery -A modem.core.main:app worker \
   --loglevel=info \
   --concurrency=4 \
   --pool=prefork \
@@ -156,17 +159,17 @@ poetry run watchmedo auto-restart \
   --directory=./modem \
   --pattern="*.py" \
   --recursive \
-  -- celery -A modem.core.celery_app worker --loglevel=info
+  -- celery -A modem.core.main:app worker --loglevel=info
 ```
 
 ### Start Celery Beat (if needed for scheduled tasks)
 ```bash
-poetry run celery -A modem.core.celery_app beat --loglevel=info
+poetry run celery -A modem.core.main:app beat --loglevel=info
 ```
 
 ### Start Flower (Celery Monitoring UI)
 ```bash
-poetry run celery -A modem.core.celery_app flower --port=5555
+poetry run celery -A modem.core.main:app flower --port=5555
 
 # Access at: http://localhost:5555
 ```
@@ -174,11 +177,10 @@ poetry run celery -A modem.core.celery_app flower --port=5555
 ## 6. Start FastAPI Gateway
 
 ```bash
-# In another terminal
-cd /Users/xinyu/code/hackthon/openai_hack/backend
-poetry run python -m gateway.core.main
+# Use the provided run script (recommended)
+./gateway/run.sh
 
-# Or with uvicorn directly
+# Or start manually
 poetry run uvicorn gateway.core.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -234,6 +236,7 @@ kill -9 <PID>
 
 ## 9. Complete Startup Sequence
 
+### Option 1: Using Provided Scripts (Recommended)
 ```bash
 # Terminal 1: Start RabbitMQ
 rabbitmq-server
@@ -243,14 +246,20 @@ redis-server
 
 # Terminal 3: Start Celery Worker
 cd /Users/xinyu/code/hackthon/openai_hack/backend
-poetry run celery -A modem.core.celery_app worker --loglevel=info
+./modem/run.sh
 
 # Terminal 4: Start FastAPI Gateway
 cd /Users/xinyu/code/hackthon/openai_hack/backend
-poetry run uvicorn gateway.core.main:app --reload --port 8000
+./gateway/run.sh
 
 # Terminal 5: (Optional) Start Flower for monitoring
-poetry run celery -A modem.core.celery_app flower --port=5555
+poetry run celery -A modem.core.main:app flower --port=5555
+```
+
+### Option 2: Using Automated Script
+```bash
+# Check prerequisites and start all services
+./start_all.sh
 ```
 
 ## 10. Environment Variable Summary
@@ -272,32 +281,24 @@ This URL is automatically constructed from the environment variables:
 - `RABBITMQ_HOST`: localhost
 - `RABBITMQ_PORT`: 5672
 
-## Quick Start Script
+## Quick Start Scripts
 
-Create a `start_services.sh` script:
+Two helper scripts are provided:
 
+### Check Prerequisites
 ```bash
-#!/bin/bash
-
-echo "Starting RabbitMQ..."
-rabbitmq-server -detached
-
-echo "Starting Redis..."
-redis-server --daemonize yes
-
-echo "Waiting for services to start..."
-sleep 5
-
-echo "Starting Celery Worker..."
-cd /Users/xinyu/code/hackthon/openai_hack/backend
-poetry run celery -A modem.core.celery_app worker --loglevel=info --detach
-
-echo "Starting FastAPI Gateway..."
-poetry run uvicorn gateway.core.main:app --reload --port 8000
-```
-
-Make it executable:
-```bash
-chmod +x start_services.sh
+# Check if all services are ready
 ./start_services.sh
 ```
+
+### Start All Services
+```bash
+# Start all services automatically (uses tmux if available)
+./start_all.sh
+```
+
+Both scripts will:
+- Check for required dependencies (RabbitMQ, Redis, Poetry)
+- Verify configuration (.env file)
+- Start services using the existing `modem/run.sh` and `gateway/run.sh` scripts
+- Provide helpful status information and URLs

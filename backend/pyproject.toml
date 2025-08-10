@@ -48,6 +48,8 @@ watchdog = ">=6.0.0"
 # Gateway dependencies
 httpx = {extras = ["socks"], version = ">=0.28.1"}
 # e2b = "1.2.0b6"  # Removed - no longer needed
+composio-core = "^0.7.20"
+composio = "^0.8.7"
 
 [tool.poetry.group.dev.dependencies]
 watchdog = ">=6.0.0"

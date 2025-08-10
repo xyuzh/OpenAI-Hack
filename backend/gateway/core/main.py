@@ -1,11 +1,17 @@
 import warnings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 from common.db.redis_pool import initialize_async_redis_pool, close_async_redis_pool
 from common.utils.logger_utils import get_logger
 from gateway.controller.agent_thread_controller import router as agent_thread_router
 from gateway.controller.health_controller import router as health_router
+from gateway.controller.composio_auth_controller import router as composio_auth_router
+from gateway.controller.composio_docs_controller import router as composio_docs_router
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Suppress Pydantic serialization warnings from LiteLLM library globally
 warnings.filterwarnings("ignore", message=".*PydanticSerializationUnexpectedValue.*Expected.*fields but got.*")
@@ -29,6 +35,11 @@ app.include_router(health_router, tags=["Health"])
 # 注册线程API路由
 app.include_router(agent_thread_router,
                    prefix="/api/agent", tags=["AgentThread"])
+# 注册Composio路由
+app.include_router(composio_auth_router,
+                   prefix="/api", tags=["Composio Auth"])
+app.include_router(composio_docs_router,
+                   prefix="/api", tags=["Documents"])
 
 
 # 应用启动事件

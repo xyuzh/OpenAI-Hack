@@ -44,11 +44,16 @@
     };
   
     // --- Props ---------------------------------------------------------------
+    import { createEventDispatcher } from 'svelte';
     import FilePreview from './FilePreview.svelte';
+    
+    const dispatch = createEventDispatcher();
 
     export let documents: DriveFile[] = [];
     /** Called when a row is opened (double-click or Enter/Space). */
     export let onOpen: (doc: DriveFile) => void = () => {};
+    /** User entity ID for auth */
+    export let entityId: string = 'default-user';
     /** Optional: initial sort field */
     export let initialSort: { field: 'name' | 'createdTime' | 'modifiedTime'; dir: 'asc' | 'desc' } = {
       field: 'modifiedTime',
@@ -150,6 +155,11 @@
       const owner = doc.owners?.[0]?.displayName ?? doc.owners?.[0]?.emailAddress ?? 'Unknown';
       const lm = doc.lastModifyingUser?.displayName ?? doc.lastModifyingUser?.emailAddress ?? '—';
       return `${doc.name}\nOwner: ${owner}\nLast modified by: ${lm}`;
+    }
+    
+    function handleStartChat(event) {
+      // Forward the event to parent
+      dispatch('startChat', event.detail);
     }
   </script>
   
@@ -293,7 +303,12 @@
   </div>
   
   {#if previewDoc}
-    <FilePreview doc={previewDoc} onClose={() => (previewDoc = null)} />
+    <FilePreview 
+      doc={previewDoc} 
+      onClose={() => (previewDoc = null)} 
+      entityId={entityId}
+      on:startChat={handleStartChat}
+    />
   {/if}
 
   <style>

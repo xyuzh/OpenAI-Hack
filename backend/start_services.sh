@@ -4,15 +4,17 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}Starting Backend Services...${NC}"
-echo "================================="
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}   Backend Services Startup Guide${NC}"
+echo -e "${GREEN}========================================${NC}"
 
 # Function to check if a service is running
 check_service() {
-    if lsof -Pi :$1 -sTCP:LISTEN -t >/dev/null ; then
-        echo -e "${GREEN}✓${NC} Port $1 is already in use (service running)"
+    if lsof -Pi :$1 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo -e "${GREEN}✓${NC} Port $1 is in use (service likely running)"
         return 0
     else
         echo -e "${YELLOW}✗${NC} Port $1 is free"
@@ -20,92 +22,148 @@ check_service() {
     fi
 }
 
-# Check for required services
-echo -e "\n${YELLOW}Checking services...${NC}"
+# Function to check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+echo -e "\n${BLUE}Step 1: Checking Prerequisites${NC}"
+echo "--------------------------------"
+
+# Check for required commands
+MISSING_DEPS=()
+
+if ! command_exists rabbitmq-server; then
+    MISSING_DEPS+=("rabbitmq")
+fi
+
+if ! command_exists redis-server; then
+    MISSING_DEPS+=("redis")
+fi
+
+if ! command_exists poetry; then
+    MISSING_DEPS+=("poetry")
+fi
+
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    echo -e "${RED}Missing required dependencies:${NC}"
+    for dep in "${MISSING_DEPS[@]}"; do
+        echo -e "  ${YELLOW}• $dep${NC}"
+    done
+    echo -e "\n${YELLOW}Install with Homebrew:${NC}"
+    echo "  brew install ${MISSING_DEPS[*]}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓${NC} All required commands found"
+
+# Check if .env file exists
+echo -e "\n${BLUE}Step 2: Checking Configuration${NC}"
+echo "--------------------------------"
+
+if [ ! -f .env ]; then
+    echo -e "${RED}✗ .env file not found!${NC}"
+    echo -e "${YELLOW}Please copy .env.complete to .env and update with your API keys:${NC}"
+    echo "  cp .env.complete .env"
+    echo "  # Then edit .env to add your OPENAI_API_KEY and COMPOSIO_API_KEY"
+    exit 1
+fi
+
+# Check for required API keys
+if ! grep -q "^OPENAI_API_KEY=" .env || grep -q "^OPENAI_API_KEY=your_openai_api_key_here" .env; then
+    echo -e "${YELLOW}⚠ OPENAI_API_KEY not configured in .env${NC}"
+    echo "Please add your OpenAI API key to the .env file"
+fi
+
+if ! grep -q "^COMPOSIO_API_KEY=" .env || grep -q "^COMPOSIO_API_KEY=your_composio_api_key_here" .env; then
+    echo -e "${YELLOW}⚠ COMPOSIO_API_KEY not configured in .env${NC}"
+    echo "Please add your Composio API key to the .env file"
+fi
+
+echo -e "${GREEN}✓${NC} Configuration file found"
 
 # Check RabbitMQ
+echo -e "\n${BLUE}Step 3: Checking RabbitMQ${NC}"
+echo "--------------------------------"
+
 if check_service 5672; then
-    echo "RabbitMQ appears to be running"
+    echo -e "${GREEN}✓${NC} RabbitMQ appears to be running"
 else
-    echo -e "${YELLOW}Starting RabbitMQ...${NC}"
-    if command -v rabbitmq-server &> /dev/null; then
-        rabbitmq-server -detached
-        sleep 3
-    else
-        echo -e "${RED}RabbitMQ not found! Please install it first.${NC}"
-        echo "Run: brew install rabbitmq"
-        exit 1
-    fi
+    echo -e "${YELLOW}RabbitMQ is not running.${NC}"
+    echo -e "Start it with: ${GREEN}rabbitmq-server${NC}"
+    echo -e "Or in background: ${GREEN}brew services start rabbitmq${NC}"
 fi
 
 # Check Redis
+echo -e "\n${BLUE}Step 4: Checking Redis${NC}"
+echo "--------------------------------"
+
 if check_service 6379; then
-    echo "Redis appears to be running"
+    echo -e "${GREEN}✓${NC} Redis appears to be running"
 else
-    echo -e "${YELLOW}Starting Redis...${NC}"
-    if command -v redis-server &> /dev/null; then
-        redis-server --daemonize yes
-        sleep 2
-    else
-        echo -e "${RED}Redis not found! Please install it first.${NC}"
-        echo "Run: brew install redis"
-        exit 1
-    fi
+    echo -e "${YELLOW}Redis is not running.${NC}"
+    echo -e "Start it with: ${GREEN}redis-server${NC}"
+    echo -e "Or in background: ${GREEN}brew services start redis${NC}"
 fi
 
-# Check if .env file exists
-if [ ! -f .env ]; then
-    echo -e "${RED}Error: .env file not found!${NC}"
-    echo "Please copy .env.complete to .env and update with your API keys"
-    exit 1
-fi
+# Instructions for starting services
+echo -e "\n${GREEN}========================================${NC}"
+echo -e "${GREEN}   How to Start Services${NC}"
+echo -e "${GREEN}========================================${NC}"
 
-# Check for OPENAI_API_KEY in .env
-if ! grep -q "^OPENAI_API_KEY=" .env || grep -q "^OPENAI_API_KEY=your_openai_api_key_here" .env; then
-    echo -e "${RED}Error: OPENAI_API_KEY not configured in .env!${NC}"
-    echo "Please add your OpenAI API key to the .env file"
-    exit 1
-fi
+echo -e "\n${BLUE}Option 1: Using tmux (Recommended)${NC}"
+echo "--------------------------------"
+echo "1. Start tmux: tmux new -s backend"
+echo "2. Start Celery worker (Modem):"
+echo "   ${GREEN}./modem/run.sh${NC}"
+echo "3. Create new pane: Ctrl+B %"
+echo "4. Start FastAPI gateway:"
+echo "   ${GREEN}./gateway/run.sh${NC}"
+echo "5. Detach from tmux: Ctrl+B D"
+echo "6. Reattach later: tmux attach -t backend"
 
-echo -e "\n${GREEN}Starting Celery Worker...${NC}"
-echo "================================="
-
-# Kill existing Celery workers
-pkill -f "celery.*modem.core.celery_app.*worker" 2>/dev/null
-
-# Start Celery worker in background
-poetry run celery -A modem.core.celery_app worker \
-    --loglevel=info \
-    --concurrency=4 \
-    --pool=prefork \
-    --logfile=celery_worker.log \
-    --detach \
-    --pidfile=celery_worker.pid
-
-echo "Celery worker started (logs in celery_worker.log)"
-
-echo -e "\n${GREEN}Starting FastAPI Gateway...${NC}"
-echo "================================="
-
-# Start FastAPI in the foreground so we can see the logs
-echo -e "${YELLOW}Gateway will run in foreground. Press Ctrl+C to stop all services.${NC}"
+echo -e "\n${BLUE}Option 2: Using separate terminals${NC}"
+echo "--------------------------------"
+echo "Terminal 1 - Start Celery Worker (Modem):"
+echo "  ${GREEN}cd $(pwd)${NC}"
+echo "  ${GREEN}./modem/run.sh${NC}"
 echo ""
+echo "Terminal 2 - Start FastAPI Gateway:"
+echo "  ${GREEN}cd $(pwd)${NC}"
+echo "  ${GREEN}./gateway/run.sh${NC}"
 
-# Trap Ctrl+C to cleanup
-trap cleanup INT
+echo -e "\n${BLUE}Option 3: Quick start (both in background)${NC}"
+echo "--------------------------------"
+echo "  ${GREEN}./modem/run.sh > modem.log 2>&1 &${NC}"
+echo "  ${GREEN}./gateway/run.sh${NC}"
 
-cleanup() {
-    echo -e "\n${YELLOW}Shutting down services...${NC}"
-    
-    # Kill Celery worker
-    if [ -f celery_worker.pid ]; then
-        kill $(cat celery_worker.pid) 2>/dev/null
-        rm celery_worker.pid
-    fi
-    
-    echo -e "${GREEN}Services stopped.${NC}"
-    exit 0
-}
+# Check if services are already running
+echo -e "\n${BLUE}Current Service Status:${NC}"
+echo "--------------------------------"
 
-# Run FastAPI
-poetry run uvicorn gateway.core.main:app --reload --host 0.0.0.0 --port 8000
+if check_service 8000; then
+    echo -e "${GREEN}✓${NC} FastAPI Gateway (port 8000)"
+else
+    echo -e "${YELLOW}✗${NC} FastAPI Gateway (port 8000)"
+fi
+
+# Check if Celery is running
+if pgrep -f "celery.*modem.core.main:app.*worker" > /dev/null; then
+    echo -e "${GREEN}✓${NC} Celery Worker (Modem)"
+else
+    echo -e "${YELLOW}✗${NC} Celery Worker (Modem)"
+fi
+
+echo -e "\n${GREEN}========================================${NC}"
+echo -e "${GREEN}   Service URLs${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo "• FastAPI Docs: ${BLUE}http://localhost:8000/docs${NC}"
+echo "• RabbitMQ Management: ${BLUE}http://localhost:15672${NC} (guest/guest)"
+echo "• Flower (if started): ${BLUE}http://localhost:5555${NC}"
+
+echo -e "\n${YELLOW}Tips:${NC}"
+echo "• Check logs: tail -f modem.log or tail -f gateway.log"
+echo "• Stop all: pkill -f celery && pkill -f uvicorn"
+echo "• Monitor Celery: poetry run celery -A modem.core.main:app flower"
+
+echo -e "\n${GREEN}Ready to start services!${NC}"

@@ -1,6 +1,5 @@
 import logging
 import os
-import ssl
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -193,7 +192,8 @@ class Config:
         broker_url = cls.get_broker_url()
         celery_config = {
             'broker_url': broker_url,
-            'broker_use_ssl': {'cert_reqs': ssl.CERT_NONE}
+            # Don't use SSL for local RabbitMQ
+            'broker_use_ssl': None
         }
 
         # 队列配置

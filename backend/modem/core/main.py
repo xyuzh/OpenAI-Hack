@@ -3,12 +3,16 @@ import re
 
 from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown
+from dotenv import load_dotenv
 
 from common.config import Config
 from common.db.redis_pool import initialize_sync_redis_pool, close_sync_redis_pool
 from common.utils.logger_utils import get_logger
 from modem.type import ProcessFlowDataRequest
 from workflow.runner.runner import Runner
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 app = Celery('main')

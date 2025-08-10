@@ -1,9 +1,15 @@
 """workflow.tool package
 
-This package intentionally does not import or register any tools by default.
-Tool registrations and implementations will be added later when tool support
-is reintroduced.
+This package registers tools that are available for the agent to use.
 """
 
-# Expose nothing for now to avoid accidental imports/side effects
-__all__: list[str] = []
+# Import and register tools
+from workflow.tool.jira.tool import JiraTool
+from workflow.tool.google_docs.tool import GoogleDocsTool
+from workflow.tool.registry import ToolRegistry
+
+# Register tools
+ToolRegistry.register(JiraTool)
+ToolRegistry.register(GoogleDocsTool)
+
+__all__ = ["ToolRegistry", "JiraTool", "GoogleDocsTool"]
